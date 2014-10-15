@@ -12,8 +12,19 @@ cabal-version:       >=1.10
 
 executable url-shortener
   main-is:             Main.hs
-  build-depends:       base >=4.7 && <4.8,
+  build-depends:       base >= 4.7 && < 4.8,
                        http-types,
                        wai,
                        warp
-  default-language:    Haskell2010
+
+library
+  build-depends:       base >=4.7 && <4.8
+  exposed-modules:     Shortener
+
+test-suite spec
+  main-is: Spec.hs
+  type: exitcode-stdio-1.0
+  build-depends:       base >= 4.7 && < 4.8
+                     , url-shortener
+                     , hspec >= 1.1
+                     , QuickCheck
