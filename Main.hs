@@ -1,17 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Network.HTTP.Types
-import Network.Wai
-import Network.Wai.Handler.Warp (run)
 
-app :: Application
-app _ respond = do
-    putStrLn "I've done some IO here"
-    respond $ responseLBS
-        status200
-        [("Content-Type", "text/plain")]
-        "Hello, Web!"
+import Snap
+
+data Shortener = Shortener { _db :: String }
 
 main :: IO ()
 main = do
-    putStrLn $ "http://localhost:8080/"
-    run 8080 app
+  (_, site, _) <- runSnaplet Nothing shortenerInit
+  quickHttpServe site
+
+shortenerInit :: SnapletInit Shortener Shortener
+shortenerInit = makeSnaplet "shortener" "DESC" Nothing $ do
+  addRoutes [("/", indexHandler)]
+  return Shortener { _db = "foo" }
+
+indexHandler :: Handler Shortener Shortener ()
+indexHandler = writeText "foo"
