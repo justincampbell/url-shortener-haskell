@@ -13,5 +13,9 @@ initialWorld = World 0 empty
 shorten :: World -> Url -> (World, Token)
 shorten world url = (newWorld, token) where
         nextId = succ $ _id world
-        newWorld = World nextId empty
         token = show nextId
+        newUrls = insert token url $ _urls world
+        newWorld = World nextId newUrls
+
+expand :: World -> Token -> Maybe Url
+expand world token = Data.Map.lookup token $ _urls world
