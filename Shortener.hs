@@ -1,11 +1,17 @@
 module Shortener where
 
+import Data.Map
+
+data World = World { _id :: Int, _urls :: Map Token Url } deriving (Show)
+
 type Token = String
 type Url = String
 
-data State = State { _id :: Int }
+initialWorld :: World
+initialWorld = World 0 empty
 
-shorten :: State -> Url -> (State, Token)
-shorten state _ = (newstate, token) where
-    newstate = State $ succ (_id state)
-    token = show (_id newstate)
+shorten :: World -> Url -> (World, Token)
+shorten world url = (newWorld, token) where
+        nextId = succ $ _id world
+        newWorld = World nextId empty
+        token = show nextId
