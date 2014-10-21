@@ -10,8 +10,8 @@ type Url = String
 initialWorld :: World
 initialWorld = World 0 empty
 
-shorten :: World -> Url -> (World, Token)
-shorten world url = (newWorld, token) where
+shorten :: Url -> World -> (World, Token)
+shorten url world = (newWorld, token) where
         nextId = succ $ _id world
         token = show nextId
         newUrls = insert token url $ _urls world
