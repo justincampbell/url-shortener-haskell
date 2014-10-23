@@ -10,12 +10,15 @@ type Url = String
 initialWorld :: World
 initialWorld = World 0 empty
 
-shorten :: Url -> World -> (World, Token)
-shorten url world = (newWorld, token) where
+shorten :: Url -> World -> World
+shorten url world = newWorld where
         nextId = succ $ _id world
         token = show nextId
         newUrls = insert token url $ _urls world
         newWorld = World nextId newUrls
+
+lastToken :: World -> Token
+lastToken = show . _id
 
 expand :: World -> Token -> Maybe Url
 expand world token = Data.Map.lookup token $ _urls world
