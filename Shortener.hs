@@ -20,5 +20,5 @@ shorten url world = newWorld where
 lastToken :: World -> Token
 lastToken = show . _id
 
-expand :: World -> Token -> Maybe Url
-expand world token = Data.Map.lookup token $ _urls world
+expand :: Token -> World -> Maybe Url
+expand token world = Data.Map.lookup token $ _urls world
