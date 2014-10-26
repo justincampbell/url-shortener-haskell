@@ -1,8 +1,13 @@
+{-# LANGUAGE AutoDeriveTypeable,StandaloneDeriving #-}
+
 module Shortener where
 
 import Data.Map
+import Data.Typeable
 
 data World = World { _id :: Int, _urls :: Map Token Url } deriving (Show)
+
+deriving instance Typeable World
 
 type Token = String
 type Url = String

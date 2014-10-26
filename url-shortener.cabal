@@ -11,14 +11,17 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable url-shortener
-  main-is:          Main.hs
-  build-depends:    base >=4.7 && <4.8,
-                    lens,
-                    network,
-                    snap,
-                    snap-core,
-                    snap-extras,
-                    text
+  main-is:             Main.hs
+  build-depends:       base >= 4.7 && < 4.8,
+                       binary,
+                       bytestring,
+                       containers,
+                       global-variables,
+                       http-types,
+                       text,
+                       wai,
+                       wai-extra,
+                       warp
 
 library
   build-depends:       base >=4.7 && <4.8,
