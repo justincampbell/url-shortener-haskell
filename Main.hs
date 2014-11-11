@@ -1,17 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings , NoImplicitPrelude #-}
 
-import Data.Binary
-import qualified Data.ByteString.Char8 as Char
-import Data.Global
-import Data.IORef
-import Data.Maybe
-import Data.Text as Text
-import Network.HTTP.Types
-import Network.Wai
-import Network.Wai.Handler.Warp (run)
-import System.IO.Unsafe
-
-import Shortener
+import           Data.Binary (encode)
+import qualified Data.ByteString.Char8 as CBS
+import           Data.Global (declareIORef)
+import           Data.IORef (IORef, readIORef, modifyIORef) 
+import           Data.Maybe (Maybe (..) , fromJust)
+import           Data.Text (unpack)
+import Network.HTTP.Types (status302,
+                           status201,
+                           status404)
+import           Network.Wai (Request, Response,Application, pathInfo, responseLBS, queryString, ResponseReceived)
+import           Network.Wai.Handler.Warp (run)
+import           Prelude (($), IO , putStrLn, (++) , lookup , (.) ) 
+import           System.IO.Unsafe
+import           Shortener
 
 world :: IORef World
 world = declareIORef "world" initialWorld
@@ -21,17 +23,21 @@ main = do
         putStrLn "listening on 8080"
         run 8080 app
 
-app :: Application
-app request respond =
-    respond $ case pathInfo request of
-        [] -> indexHandler
-        ["shorten"] -> shortenHandler request
-        _ -> expandHandler request
+app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+app request respond = do
+    respond.responseBuilder $ request
+
+
+responseBuilder request =  case pathInfo request of
+  [] -> indexHandler
+  ["shorten"] -> shortenHandler request
+  _ -> expandHandler request
+
 
 indexHandler :: Response
 indexHandler = redirectTo "https://github.com/justincampbell/url-shorteners"
 
-redirectTo :: Char.ByteString -> Response
+redirectTo :: CBS.ByteString -> Response
 redirectTo url = responseLBS status302 [("Location", url)] ""
 
 shortenHandler :: Request -> Response
@@ -45,7 +51,7 @@ shortenHandler request = responseLBS status headers body where
 
 extractUrl :: Request -> Url
 extractUrl request = case url of
-                         Just url' -> Char.unpack $ fromJust url'
+                         Just url' -> CBS.unpack $ fromJust url'
                          Nothing -> ""
                      where url = lookup "url" $ queryString request
 
@@ -53,14 +59,14 @@ expandHandler :: Request -> Response
 expandHandler request =
         case url of
             Nothing -> responseLBS status404 [] ""
-            Just url' -> redirectTo $ Char.pack url'
+            Just url' -> redirectTo $ CBS.pack url'
         where url = unsafeExpand $ extractToken request
 
 extractToken :: Request -> Token
 extractToken request =
         case pathInfo request of
-            [] -> Text.unpack ""
-            [a] -> Text.unpack a
+            [] -> unpack ""
+            [a] -> unpack a
             _ -> ""
 
 unsafeShorten :: Url -> ()
