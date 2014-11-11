@@ -17,9 +17,10 @@ import           Data.Global (declareIORef)
 import           Data.IORef (IORef, readIORef, modifyIORef)
 import           Data.Maybe (Maybe (..) , fromJust)
 import           Data.Text (unpack, Text)
+
 import Network.HTTP.Types (status302,
                            status201,
-                           status404)
+                           status404)  
 import           Network.Wai (Request, Response,Application, pathInfo, responseLBS, queryString, ResponseReceived)
 import           Network.Wai.Handler.Warp (run)
 import           Data.Map
