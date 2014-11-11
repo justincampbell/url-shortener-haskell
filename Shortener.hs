@@ -1,9 +1,7 @@
 {-# LANGUAGE AutoDeriveTypeable,StandaloneDeriving #-}
 {-# LANGUAGE OverloadedStrings , NoImplicitPrelude #-}
 
-module Shortener where
-
-
+module Shortener (app) where
 
 
 import           Prelude (($), IO , putStrLn, (++) , (.), return
