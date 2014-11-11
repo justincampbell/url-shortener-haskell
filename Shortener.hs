@@ -6,8 +6,9 @@ module Shortener where
 
 
 
-import           Prelude (($), IO , putStrLn, (++) , (.)
+import           Prelude (($), IO , putStrLn, (++) , (.), return
                          ,show, Int, Show, succ, String)
+import Control.Applicative ((<$>))  
 
 import qualified Prelude as P
 import           Data.Binary (encode)
@@ -40,6 +41,21 @@ world :: IORef World
 world = declareIORef "world" initialWorld
 
 
+app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+app request respond = do
+    response <- responseBuilder request
+    respond response
+
+
+responseBuilder :: Request -> IO Response
+responseBuilder request =  case pathInfo request of
+  [] -> return indexHandler
+  ["shorten"] -> shortenHandler request
+  _ -> expandHandler request
+
+
+
+
 initialWorld :: World
 initialWorld = World 0 empty
 
@@ -57,11 +73,6 @@ expand :: Token -> World -> Maybe Url
 expand token world = Data.Map.lookup token $ _urls world
 
 
-responseBuilder request =  case pathInfo request of
-  [] -> indexHandler
-  ["shorten"] -> shortenHandler request
-  _ -> expandHandler request
-
 
 expandHandler :: Request -> Response
 expandHandler request =
@@ -77,8 +88,8 @@ extractToken request =
             [a] -> unpack a
             _ -> ""
 
-unsafeShorten :: Url -> ()
-unsafeShorten url = unsafePerformIO $ modifyIORef world (shorten url)
+updateShortenIORef :: Url -> IO ()
+updateShortenIORef url = modifyIORef world (shorten url)
 
 unsafeExpand :: Token -> Maybe Url
 unsafeExpand token = expand token currentWorld where
@@ -93,14 +104,17 @@ redirectTo :: CBS.ByteString -> Response
 redirectTo url = responseLBS status302 [("Location", url)] ""
 
 shortenHandler :: Request -> Response
-shortenHandler request = responseLBS status headers body where
-    url = extractUrl request
-    shortenResult = unsafeShorten url
-    status = case shortenResult of () -> status201
-    headers = []
-    token = lastToken $ unsafePerformIO $ readIORef world
-    body = encode $ "/" ++ token
+shortenHandler request = do
+    let
+      url = extractUrl request
+      headers = []
+    shortenResult <-  updateShortenIORef url
+    token <- lastToken <$>
+             readIORef world    
+--    status = case shortenResult of () -> status201
 
+    body = encode $ "/" ++ token
+    responseLBS status201 headers body 
 extractUrl :: Request -> Url
 extractUrl request = case url of
                          Just url' -> CBS.unpack $ fromJust url'

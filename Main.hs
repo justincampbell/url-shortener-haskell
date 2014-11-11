@@ -21,8 +21,4 @@ main = do
         putStrLn "listening on 8080"
         run 8080 app
 
-app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
-app request respond = do
-    respond.responseBuilder $ request
-
 
