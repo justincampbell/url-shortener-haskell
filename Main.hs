@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Data.Binary
+import Control.Applicative ((<$>))
+import Data.Binary (encode)
 import qualified Data.ByteString.Char8 as Char
-import Data.Global
-import Data.IORef
-import Data.Maybe
+import Data.Global (declareIORef)
+import Data.IORef (IORef, readIORef, modifyIORef)
+import Data.Maybe (fromJust)
 import Data.Text as Text
-import Network.HTTP.Types
-import Network.Wai
+import Network.HTTP.Types (status201, status302, status404)
+import Network.Wai (Request, Response, pathInfo, responseLBS, queryString, ResponseReceived)
 import Network.Wai.Handler.Warp (run)
-import System.IO.Unsafe
 
 import Shortener
 
@@ -21,12 +21,16 @@ main = do
         putStrLn "listening on 8080"
         run 8080 app
 
-app :: Application
-app request respond =
-    respond $ case pathInfo request of
-        [] -> indexHandler
-        ["shorten"] -> shortenHandler request
-        _ -> expandHandler request
+app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+app request respond = do
+    response <- dispatch request
+    respond response
+
+dispatch :: Request -> IO Response
+dispatch request =  case pathInfo request of
+  [] -> return indexHandler
+  ["shorten"] -> shortenHandler request
+  _ -> expandHandler request
 
 indexHandler :: Response
 indexHandler = redirectTo "https://github.com/justincampbell/url-shorteners"
@@ -34,14 +38,17 @@ indexHandler = redirectTo "https://github.com/justincampbell/url-shorteners"
 redirectTo :: Char.ByteString -> Response
 redirectTo url = responseLBS status302 [("Location", url)] ""
 
-shortenHandler :: Request -> Response
-shortenHandler request = responseLBS status headers body where
-    url = extractUrl request
-    shortenResult = unsafeShorten url
-    status = case shortenResult of () -> status201
-    headers = []
-    token = lastToken $ unsafePerformIO $ readIORef world
-    body = encode $ "/" ++ token
+shortenHandler :: Request -> IO Response
+shortenHandler request = do
+    let
+        url = extractUrl request
+        headers = []
+    _ <- updateShortenIORef url
+    token <- lastToken <$>
+             readIORef world
+    let
+        body = encode $ "/" ++ token
+    return $ responseLBS status201 headers body
 
 extractUrl :: Request -> Url
 extractUrl request = case url of
@@ -49,12 +56,12 @@ extractUrl request = case url of
                          Nothing -> ""
                      where url = lookup "url" $ queryString request
 
-expandHandler :: Request -> Response
-expandHandler request =
+expandHandler :: Request -> IO Response
+expandHandler request = do
+        url <- expandTokenIORef $ extractToken request
         case url of
-            Nothing -> responseLBS status404 [] ""
-            Just url' -> redirectTo $ Char.pack url'
-        where url = unsafeExpand $ extractToken request
+            Nothing -> return $ responseLBS status404 [] ""
+            Just url' -> return $ redirectTo $ Char.pack url'
 
 extractToken :: Request -> Token
 extractToken request =
@@ -63,9 +70,10 @@ extractToken request =
             [a] -> Text.unpack a
             _ -> ""
 
-unsafeShorten :: Url -> ()
-unsafeShorten url = unsafePerformIO $ modifyIORef world (shorten url)
+updateShortenIORef :: Url -> IO ()
+updateShortenIORef url = modifyIORef world (shorten url)
 
-unsafeExpand :: Token -> Maybe Url
-unsafeExpand token = expand token currentWorld where
-    currentWorld = unsafePerformIO $ readIORef world
+expandTokenIORef :: Token -> IO (Maybe Url)
+expandTokenIORef token = do
+    currentWorld <- readIORef world
+    return $ expand token currentWorld

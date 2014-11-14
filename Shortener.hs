@@ -1,4 +1,5 @@
-{-# LANGUAGE AutoDeriveTypeable,StandaloneDeriving #-}
+{-# LANGUAGE AutoDeriveTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Shortener where
 
