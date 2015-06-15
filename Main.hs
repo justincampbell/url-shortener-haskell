@@ -10,6 +10,7 @@ import Data.Text as Text
 import Network.HTTP.Types (status201, status302, status404)
 import Network.Wai (Request, Response, pathInfo, responseLBS, queryString, ResponseReceived)
 import Network.Wai.Handler.Warp (run)
+import System.Environment (getEnvironment)
 
 import Shortener
 
@@ -18,8 +19,9 @@ world = declareIORef "world" initialWorld
 
 main :: IO ()
 main = do
-        putStrLn "listening on 8080"
-        run 8080 app
+        env <- getEnvironment
+        let port = maybe 8080 read $ lookup "PORT" env
+        run port app
 
 app :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 app request respond = do
